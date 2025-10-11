@@ -1,0 +1,31 @@
+#ifndef DS18B20_H
+#define DS18B20_H
+
+#include <zephyr/drivers/sensor.h>
+
+/**
+ * @brief Initialize the DS18B20 temperature sensor
+ * @return true on success, false on failure
+ */
+bool ds18b20_init(void);
+
+/**
+ * @brief Read temperature from the DS18B20 sensor
+ * @param temp Pointer to store the temperature reading
+ * @return 0 on success, negative error code on failure
+ */
+int ds18b20_read_temperature(struct sensor_value *temp);
+
+/**
+ * @brief Check if DS18B20 sensor is ready
+ * @return true if ready, false otherwise
+ */
+bool ds18b20_is_ready(void);
+
+/**
+ * @brief Monitor temperature at specified intervals
+ * @param read_interval_ms Interval in milliseconds between readings
+ */
+void ds18b20_monitor_temperature(const uint16_t read_interval_ms);
+
+#endif /* DS18B20_H */

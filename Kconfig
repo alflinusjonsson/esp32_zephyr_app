@@ -12,4 +12,16 @@ config WIFI_SAMPLE_PSK
 	  WPA2 password used to connect to the target AP.
 	  For example: "PSK"
 
+config UDP_SERVER_ADDR
+	string "UDP Server IP address"
+	help
+	  The UDP server IP address
+	  For example: "192.168.50.1"
+
+config UDP_SERVER_PORT
+	int "UDP Server Port"
+	help
+	  The UDP server port
+	  For example: 4242
+
 source "Kconfig.zephyr"
