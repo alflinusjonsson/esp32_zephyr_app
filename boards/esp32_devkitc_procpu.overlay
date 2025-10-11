@@ -7,11 +7,6 @@
  */
 
 / {
-    aliases {
-        w1 = &w1;
-        ds18b20 = &ds18b20;
-    };
-
     w1: w1 {
         compatible = "zephyr,w1-gpio";
         gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
@@ -20,7 +15,6 @@
         ds18b20: ds18b20 {
             compatible = "maxim,ds18b20";
             resolution = <12>;
-            status = "okay";
         };
     };
 };
