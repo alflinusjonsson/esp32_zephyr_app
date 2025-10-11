@@ -5,7 +5,7 @@
 
 /**
  * @brief Initialize the DS18B20 temperature sensor
- * @return true on success, false on failure
+ * @return true if initialization was successful, false otherwise
  */
 bool ds18b20_init(void);
 
@@ -15,12 +15,6 @@ bool ds18b20_init(void);
  * @return 0 on success, negative error code on failure
  */
 int ds18b20_read_temperature(struct sensor_value *temp);
-
-/**
- * @brief Check if DS18B20 sensor is ready
- * @return true if ready, false otherwise
- */
-bool ds18b20_is_ready(void);
 
 /**
  * @brief Monitor temperature at specified intervals

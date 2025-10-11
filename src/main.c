@@ -16,9 +16,9 @@ int main(void)
 		return -1;
 	}
 
-    if (!ds18b20_init()) {
-        return -1;
-    }
+	if (!ds18b20_init()) {
+		return -1;
+	}
 
 	ds18b20_monitor_temperature(TEMP_READ_INTERVAL_MS);
 
