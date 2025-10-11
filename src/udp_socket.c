@@ -11,8 +11,6 @@ BUILD_ASSERT(sizeof(CONFIG_UDP_SERVER_PORT) > 0,
 
 LOG_MODULE_REGISTER(APP_SOCKET, CONFIG_LOG_DEFAULT_LEVEL);
 
-#define TEMP_MSG_SIZE 32
-
 static int udp_sock = -1;
 static struct sockaddr_in server_addr;
 
@@ -42,11 +40,11 @@ void udp_socket_send_sensor_data(struct sensor_value *temp)
         return;
     }
 
-    char msg[TEMP_MSG_SIZE];
-    int len = snprintf(msg, sizeof(msg), "Temperature: %d.%06d °C", temp->val1, temp->val2);
-
-    const ssize_t sent = sendto(udp_sock, msg, len, 0, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    const ssize_t sent = sendto(udp_sock, temp, sizeof(struct sensor_value), 0,
+                               (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (sent < 0) {
         LOG_WRN("Failed to send UDP packet: %s", strerror(errno));
+    } else {
+        LOG_DBG("Sent %d bytes: val1=%d, val2=%d", (int)sent, temp->val1, temp->val2);
     }
 }
