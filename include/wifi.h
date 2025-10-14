@@ -5,14 +5,9 @@
 
 /**
  * @brief Initialize Wi-Fi and register event callbacks
+ * @return true if initialization was successful, false otherwise
  */
-void wifi_init(void);
-
-/**
- * @brief Connect to Wi-Fi network
- * @return true on success, false on failure
- */
-bool connect_to_wifi(void);
+bool wifi_init(void);
 
 /**
  * @brief Handle Wi-Fi management events

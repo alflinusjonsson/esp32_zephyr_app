@@ -11,4 +11,5 @@ target_sources(app PRIVATE
     src/ds18b20.c
     src/wifi.c
     src/udp_socket.c
+    src/led.c
 )

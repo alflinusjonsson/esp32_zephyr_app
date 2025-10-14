@@ -17,9 +17,8 @@ bool ds18b20_init(void);
 int ds18b20_read_temperature(struct sensor_value *temp);
 
 /**
- * @brief Monitor temperature at specified intervals
- * @param read_interval_ms Interval in milliseconds between readings
+ * @brief Monitors temperature
  */
-void ds18b20_monitor_temperature(const uint16_t read_interval_ms);
+void ds18b20_monitor_temperature(void);
 
 #endif /* DS18B20_H */

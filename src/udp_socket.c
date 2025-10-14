@@ -3,6 +3,10 @@
 #include <zephyr/net/socket.h>
 #include <zephyr/drivers/sensor.h>
 #include "udp_socket.h"
+#include "ds18b20.h"
+
+#define STACKSIZE 1024
+#define THREAD1_PRIORITY 7
 
 BUILD_ASSERT(sizeof(CONFIG_UDP_SERVER_ADDR) > 0,
 	"CONFIG_UDP_SERVER_ADDR is empty. Please provide it to west using -DCONFIG_UDP_SERVER_ADDR=<your-server-ip> or set it in prj.conf.");
@@ -10,6 +14,10 @@ BUILD_ASSERT(sizeof(CONFIG_UDP_SERVER_PORT) > 0,
 	"CONFIG_UDP_SERVER_PORT is not set or invalid. Please provide it to west using -DCONFIG_UDP_SERVER_PORT=<your-server-port> or set it in prj.conf.");
 
 LOG_MODULE_REGISTER(APP_SOCKET, CONFIG_LOG_DEFAULT_LEVEL);
+
+K_THREAD_DEFINE(udp_thread_id, STACKSIZE,
+                ds18b20_monitor_temperature, NULL, NULL, NULL,
+                THREAD1_PRIORITY, 0, 0);
 
 static int udp_sock = -1;
 static struct sockaddr_in server_addr;

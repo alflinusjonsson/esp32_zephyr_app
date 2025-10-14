@@ -6,6 +6,8 @@
 #include "ds18b20.h"
 #include "udp_socket.h"
 
+#define TEMP_READ_INTERVAL_MS 5000
+
 LOG_MODULE_REGISTER(APP_DS18B20, CONFIG_LOG_DEFAULT_LEVEL);
 
 static const struct device *ds18b20;
@@ -37,13 +39,13 @@ int ds18b20_read_temperature(struct sensor_value *temp)
 
     int ret = sensor_sample_fetch(ds18b20);
     if (ret < 0) {
-        LOG_ERR("Failed to fetch sensor sample: %d", ret);
+        LOG_ERR("Failed to fetch sensor sample: %s", strerror(errno));
         return ret;
     }
 
     ret = sensor_channel_get(ds18b20, SENSOR_CHAN_AMBIENT_TEMP, temp);
     if (ret < 0) {
-        LOG_ERR("Failed to get temperature: %d", ret);
+        LOG_ERR("Failed to get temperature: %s", strerror(errno));
         return ret;
     }
 
@@ -51,7 +53,7 @@ int ds18b20_read_temperature(struct sensor_value *temp)
     return 0;
 }
 
-void ds18b20_monitor_temperature(const uint16_t read_interval_ms)
+void ds18b20_monitor_temperature(void)
 {
     LOG_INF("Starting temperature monitoring...");
 
@@ -60,11 +62,10 @@ void ds18b20_monitor_temperature(const uint16_t read_interval_ms)
 
         const int ret = ds18b20_read_temperature(&temp);
         if (ret < 0) {
-            LOG_ERR("Failed to read temperature: %d", ret);
             continue;
         }
 
         udp_socket_send_sensor_data(&temp);
-        k_sleep(K_MSEC(read_interval_ms));
+        k_sleep(K_MSEC(TEMP_READ_INTERVAL_MS));
     }
 }

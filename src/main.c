@@ -1,18 +1,12 @@
 #include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
 #include "wifi.h"
 #include "udp_socket.h"
 #include "ds18b20.h"
-
-LOG_MODULE_REGISTER(APP_MAIN, CONFIG_LOG_DEFAULT_LEVEL);
-
-#define TEMP_READ_INTERVAL_MS 5000
+#include "led.h"
 
 int main(void)
 {
-	wifi_init();
-
-	if (!connect_to_wifi()) {
+	if (!wifi_init()) {
 		return -1;
 	}
 
@@ -20,7 +14,9 @@ int main(void)
 		return -1;
 	}
 
-	ds18b20_monitor_temperature(TEMP_READ_INTERVAL_MS);
+	if (!led_init()){
+		return -1;
+	}
 
 	return 0;
 }
