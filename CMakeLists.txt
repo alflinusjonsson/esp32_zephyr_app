@@ -12,4 +12,5 @@ target_sources(app PRIVATE
     src/wifi.c
     src/udp_socket.c
     src/led.c
+    src/events.c
 )

@@ -4,9 +4,14 @@
 #include <zephyr/drivers/sensor.h>
 
 /**
- * @brief Initialize the UDP socket
+ * @brief Open UDP socket
  */
-void udp_socket_init(void);
+void udp_socket_open(void);
+
+/**
+ * @brief Close UDP socket
+ */
+void udp_socket_close(void);
 
 /**
  * @brief Send sensor data over UDP

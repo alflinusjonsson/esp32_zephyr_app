@@ -4,6 +4,7 @@
 #include <zephyr/drivers/sensor.h>
 #include "udp_socket.h"
 #include "ds18b20.h"
+#include "events.h"
 
 #define STACKSIZE 1024
 #define THREAD1_PRIORITY 7
@@ -20,9 +21,38 @@ K_THREAD_DEFINE(udp_thread_id, STACKSIZE,
                 THREAD1_PRIORITY, 0, 0);
 
 static int udp_sock = -1;
-static struct sockaddr_in server_addr;
+static struct sockaddr_in server_addr = {0};
 
-void udp_socket_init(void)
+void on_network_event(const struct zbus_channel *chan)
+{
+    if (chan != &network_chan) {
+        return;
+    }
+
+    const enum network_status *status = zbus_chan_const_msg(chan);
+    if (!status) {
+        LOG_WRN("network_chan returned NULL message pointer");
+        return;
+    }
+
+    switch (*status) {
+    case NETWORK_CONNECTED:
+        LOG_INF("Network connected");
+        udp_socket_open();
+        break;
+    case NETWORK_DISCONNECTED:
+        LOG_INF("Network disconnected");
+        udp_socket_close();
+        break;
+    default:
+        LOG_WRN("Unknown network status: %d", *status);
+        break;
+    }
+}
+
+ZBUS_LISTENER_DEFINE(network_listener, on_network_event);
+
+void udp_socket_open(void)
 {
     if (udp_sock >= 0) {
         return;
@@ -39,6 +69,22 @@ void udp_socket_init(void)
     inet_pton(AF_INET, CONFIG_UDP_SERVER_ADDR, &server_addr.sin_addr);
 
 	LOG_INF("UDP socket created");
+}
+
+void udp_socket_close(void)
+{
+    if (udp_sock < 0) {
+        return;
+    }
+
+    const int ret = close(udp_sock);
+    if (ret < 0) {
+        LOG_ERR("Failed to close UDP socket: %s", strerror(errno));
+    } else {
+        LOG_INF("UDP socket closed, clearing server_addr");
+        udp_sock = -1;
+        memset(&server_addr, 0, sizeof(server_addr));
+    }
 }
 
 void udp_socket_send_sensor_data(struct sensor_value *temp)

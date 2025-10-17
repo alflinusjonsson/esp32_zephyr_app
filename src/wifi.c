@@ -1,8 +1,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/wifi_mgmt.h>
+#include <zephyr/zbus/zbus.h>
 #include "wifi.h"
-#include "udp_socket.h"
+#include "events.h"
 
 BUILD_ASSERT(sizeof(CONFIG_WIFI_SAMPLE_SSID) > 0,
 	"CONFIG_WIFI_SAMPLE_SSID is empty. Please provide it to west using -DCONFIG_WIFI_SAMPLE_SSID=<your-ssid> or set it in prj.conf.");
@@ -58,38 +59,56 @@ bool wifi_init(void)
 void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 							   struct net_if *iface)
 {
+	enum network_status ns;
+
 	switch (mgmt_event)
 	{
 	case NET_EVENT_WIFI_CONNECT_RESULT: {
-		LOG_INF("Connected to %s", CONFIG_WIFI_SAMPLE_SSID);
-		break;
+		LOG_INF("Connected to %s. Waiting for IP address...", CONFIG_WIFI_SAMPLE_SSID);
+		return;
 	}
 	case NET_EVENT_WIFI_DISCONNECT_RESULT: {
 		LOG_INF("Disconnected from %s", CONFIG_WIFI_SAMPLE_SSID);
+		ns = NETWORK_DISCONNECTED;
 		break;
 	}
 	default:
 		LOG_WRN("Unhandled Wi-Fi event: %llu", mgmt_event);
-		break;
+		return;
+	}
+
+	const int ret = zbus_chan_pub(&network_chan, &ns, K_NO_WAIT);
+	if (ret < 0)
+	{
+		LOG_ERR("Failed to publish network status, error: %s", strerror(ret));
 	}
 }
 
 void on_ipv4_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 							   struct net_if *iface)
 {
+	enum network_status status;
+
 	switch (mgmt_event)
 	{
 	case NET_EVENT_IPV4_ADDR_ADD: {
 		LOG_INF("IPv4 address acquired");
-		udp_socket_init();
+		status = NETWORK_CONNECTED;
 		break;
 	}
 	case NET_EVENT_IPV4_ADDR_DEL: {
 		LOG_INF("IPv4 address removed");
+		status = NETWORK_DISCONNECTED;
 		break;
 	}
 	default:
 		LOG_WRN("Unhandled IPv4 event: %llu", mgmt_event);
-		break;
+		return;
+	}
+
+	const int ret = zbus_chan_pub(&network_chan, &status, K_NO_WAIT);
+	if (ret < 0)
+	{
+		LOG_ERR("Failed to publish network status, error: %s", strerror(ret));
 	}
 }
