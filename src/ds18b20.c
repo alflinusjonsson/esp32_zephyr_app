@@ -4,13 +4,25 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/sensor.h>
 #include "ds18b20.h"
-#include "udp_socket.h"
+#include "events.h"
 
 #define TEMP_READ_INTERVAL_MS 5000
+#define TEMP_STACK_SIZE 1024
 
 LOG_MODULE_REGISTER(APP_DS18B20, CONFIG_LOG_DEFAULT_LEVEL);
+K_THREAD_STACK_DEFINE(temp_stack, TEMP_STACK_SIZE);
 
 static const struct device *ds18b20;
+static struct k_thread temp_thread_data = {0};
+static k_tid_t temp_tid = NULL;
+
+static void ds18b20_sampling_thread()
+{
+    while(true) {
+        ds18b20_read_temperature();
+        k_sleep(K_MSEC(TEMP_READ_INTERVAL_MS));
+    }
+}
 
 bool ds18b20_init(void)
 {
@@ -25,47 +37,64 @@ bool ds18b20_init(void)
     return true;
 }
 
-int ds18b20_read_temperature(struct sensor_value *temp)
+void ds18b20_read_temperature(void)
 {
-    if (!device_is_ready(ds18b20)) {
-        LOG_ERR("DS18B20 not initialized");
-        return -ENODEV;
-    }
-
-    if (!temp) {
-        LOG_ERR("Invalid temperature pointer");
-        return -EINVAL;
-    }
-
     int ret = sensor_sample_fetch(ds18b20);
     if (ret < 0) {
         LOG_ERR("Failed to fetch sensor sample: %s", strerror(errno));
-        return ret;
+        return;
     }
 
-    ret = sensor_channel_get(ds18b20, SENSOR_CHAN_AMBIENT_TEMP, temp);
+    struct sensor_value temp;
+    ret = sensor_channel_get(ds18b20, SENSOR_CHAN_AMBIENT_TEMP, &temp);
     if (ret < 0) {
         LOG_ERR("Failed to get temperature: %s", strerror(errno));
-        return ret;
+        return;
     }
 
-    LOG_DBG("Temperature: %d.%06d °C", temp->val1, temp->val2);
-    return 0;
+    LOG_INF("Temperature: %d.%06d °C", temp.val1, temp.val2);
+
+    ret = zbus_chan_pub(&temp_chan, &temp, K_NO_WAIT);
+    if (ret < 0) {
+        LOG_ERR("Failed to publish temperature, error: %s", strerror(ret));
+        return;
+    }
 }
 
-void ds18b20_monitor_temperature(void)
+void on_socket_event(const struct zbus_channel *chan)
 {
-    LOG_INF("Starting temperature monitoring...");
+    if (chan != &socket_chan) {
+        return;
+    }
 
-    while (true) {
-        struct sensor_value temp;
+    const enum socket_status *status = zbus_chan_const_msg(chan);
+    if (!status) {
+        LOG_WRN("socket_chan returned NULL message pointer");
+        return;
+    }
 
-        const int ret = ds18b20_read_temperature(&temp);
-        if (ret < 0) {
-            continue;
+    switch (*status) {
+    case SOCKET_OPEN:
+        if (!temp_tid) {
+            LOG_INF("Starting temperature sampling thread");
+            temp_tid = k_thread_create(&temp_thread_data, temp_stack,
+                                       K_THREAD_STACK_SIZEOF(temp_stack),
+                                       ds18b20_sampling_thread,
+                                       NULL, NULL, NULL,
+                                       5, 0, K_NO_WAIT);
         }
-
-        udp_socket_send_sensor_data(&temp);
-        k_sleep(K_MSEC(TEMP_READ_INTERVAL_MS));
+        break;
+    case SOCKET_CLOSED:
+        if (temp_tid) {
+            LOG_INF("Stopping temperature sampling thread");
+            k_thread_abort(temp_tid);
+            temp_tid = NULL;
+        }
+        break;
+    default:
+        LOG_WRN("Unknown socket status: %d", (int)*status);
+        break;
     }
 }
+
+ZBUS_LISTENER_DEFINE(socket_listener, on_socket_event);

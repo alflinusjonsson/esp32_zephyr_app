@@ -59,7 +59,7 @@ bool wifi_init(void)
 void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 							   struct net_if *iface)
 {
-	enum network_status ns;
+	enum network_status status;
 
 	switch (mgmt_event)
 	{
@@ -69,7 +69,7 @@ void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 	}
 	case NET_EVENT_WIFI_DISCONNECT_RESULT: {
 		LOG_INF("Disconnected from %s", CONFIG_WIFI_SAMPLE_SSID);
-		ns = NETWORK_DISCONNECTED;
+		status = NETWORK_DISCONNECTED;
 		break;
 	}
 	default:
@@ -77,7 +77,7 @@ void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 		return;
 	}
 
-	const int ret = zbus_chan_pub(&network_chan, &ns, K_NO_WAIT);
+	const int ret = zbus_chan_pub(&network_chan, &status, K_NO_WAIT);
 	if (ret < 0)
 	{
 		LOG_ERR("Failed to publish network status, error: %s", strerror(ret));
