@@ -16,16 +16,14 @@ static const struct device *ds18b20;
 static struct k_thread temp_thread_data = {0};
 static k_tid_t temp_tid = NULL;
 
-static void ds18b20_sampling_thread()
-{
-    while(true) {
+static void ds18b20_sampling_thread() {
+    while (true) {
         ds18b20_read_temperature();
         k_sleep(K_MSEC(TEMP_READ_INTERVAL_MS));
     }
 }
 
-bool ds18b20_init(void)
-{
+bool ds18b20_init(void) {
     ds18b20 = DEVICE_DT_GET(DT_NODELABEL(ds18b20));
 
     if (!device_is_ready(ds18b20)) {
@@ -37,8 +35,7 @@ bool ds18b20_init(void)
     return true;
 }
 
-void ds18b20_read_temperature(void)
-{
+void ds18b20_read_temperature(void) {
     int ret = sensor_sample_fetch(ds18b20);
     if (ret < 0) {
         LOG_ERR("Failed to fetch sensor sample: %s", strerror(errno));
@@ -61,8 +58,7 @@ void ds18b20_read_temperature(void)
     }
 }
 
-void on_socket_event(const struct zbus_channel *chan)
-{
+void on_socket_event(const struct zbus_channel *chan) {
     if (chan != &socket_chan) {
         return;
     }
@@ -77,11 +73,16 @@ void on_socket_event(const struct zbus_channel *chan)
     case SOCKET_OPEN:
         if (!temp_tid) {
             LOG_INF("Starting temperature sampling thread");
-            temp_tid = k_thread_create(&temp_thread_data, temp_stack,
+            temp_tid = k_thread_create(&temp_thread_data,
+                                       temp_stack,
                                        K_THREAD_STACK_SIZEOF(temp_stack),
                                        ds18b20_sampling_thread,
-                                       NULL, NULL, NULL,
-                                       5, 0, K_NO_WAIT);
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       5,
+                                       0,
+                                       K_NO_WAIT);
         }
         break;
     case SOCKET_CLOSED:

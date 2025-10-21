@@ -16,8 +16,9 @@ bool wifi_init(void);
  * @param mgmt_event The management event type
  * @param iface Pointer to the network interface
  */
-void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
-							   struct net_if *iface);
+void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb,
+                        uint64_t mgmt_event,
+                        struct net_if *iface);
 
 /**
  * @brief Handle IPv4 management events
@@ -25,7 +26,8 @@ void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
  * @param mgmt_event The management event type
  * @param iface Pointer to the network interface
  */
-void on_ipv4_mgmt_event(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
-							   struct net_if *iface);
+void on_ipv4_mgmt_event(struct net_mgmt_event_callback *cb,
+                        uint64_t mgmt_event,
+                        struct net_if *iface);
 
 #endif /* WIFI_H */

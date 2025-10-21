@@ -8,31 +8,27 @@
 
 LOG_MODULE_REGISTER(APP_LED, CONFIG_LOG_DEFAULT_LEVEL);
 
-K_THREAD_DEFINE(led_thread_id, STACKSIZE,
-                led_toggle, NULL, NULL, NULL,
-                THREAD0_PRIORITY, 0, 0);
+K_THREAD_DEFINE(led_thread_id, STACKSIZE, led_toggle, NULL, NULL, NULL, THREAD0_PRIORITY, 0, 0);
 
 static const struct gpio_dt_spec red_led = GPIO_DT_SPEC_GET(DT_NODELABEL(red_led), gpios);
 
-bool led_init(void)
-{
+bool led_init(void) {
     if (!device_is_ready(red_led.port)) {
         LOG_ERR("LED device not ready");
-		return false;
-	}
+        return false;
+    }
 
     const int ret = gpio_pin_configure_dt(&red_led, GPIO_OUTPUT_HIGH);
-	if (ret < 0) {
-		return false;
-	}
+    if (ret < 0) {
+        return false;
+    }
 
     LOG_INF("LED device initialized");
 
     return true;
 }
 
-void led_toggle(void)
-{
+void led_toggle(void) {
     while (true) {
         const int ret = gpio_pin_toggle_dt(&red_led);
         if (ret < 0) {

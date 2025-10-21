@@ -6,17 +6,18 @@
 #include "events.h"
 
 BUILD_ASSERT(sizeof(CONFIG_UDP_SERVER_ADDR) > 0,
-	"CONFIG_UDP_SERVER_ADDR is empty. Please provide it to west using -DCONFIG_UDP_SERVER_ADDR=<your-server-ip> or set it in prj.conf.");
+             "CONFIG_UDP_SERVER_ADDR is empty. Please provide it to west using "
+             "-DCONFIG_UDP_SERVER_ADDR=<your-server-ip> or set it in prj.conf.");
 BUILD_ASSERT(sizeof(CONFIG_UDP_SERVER_PORT) > 0,
-	"CONFIG_UDP_SERVER_PORT is not set or invalid. Please provide it to west using -DCONFIG_UDP_SERVER_PORT=<your-server-port> or set it in prj.conf.");
+             "CONFIG_UDP_SERVER_PORT is not set or invalid. Please provide it to west using "
+             "-DCONFIG_UDP_SERVER_PORT=<your-server-port> or set it in prj.conf.");
 
 LOG_MODULE_REGISTER(APP_SOCKET, CONFIG_LOG_DEFAULT_LEVEL);
 
 static int udp_sock = -1;
 static struct sockaddr_in server_addr = {0};
 
-void udp_socket_open(void)
-{
+void udp_socket_open(void) {
     if (udp_sock >= 0) {
         return;
     }
@@ -31,7 +32,7 @@ void udp_socket_open(void)
     server_addr.sin_port = htons(CONFIG_UDP_SERVER_PORT);
     inet_pton(AF_INET, CONFIG_UDP_SERVER_ADDR, &server_addr.sin_addr);
 
-	LOG_INF("UDP socket created");
+    LOG_INF("UDP socket created");
 
     const enum socket_status status = SOCKET_OPEN;
     const int ret = zbus_chan_pub(&socket_chan, &status, K_NO_WAIT);
@@ -40,8 +41,7 @@ void udp_socket_open(void)
     }
 }
 
-void udp_socket_close(void)
-{
+void udp_socket_close(void) {
     if (udp_sock < 0) {
         return;
     }
@@ -63,8 +63,7 @@ void udp_socket_close(void)
     }
 }
 
-void on_temp_event(const struct zbus_channel *chan)
-{
+void on_temp_event(const struct zbus_channel *chan) {
     if (chan != &temp_chan) {
         return;
     }
@@ -80,8 +79,12 @@ void on_temp_event(const struct zbus_channel *chan)
         return;
     }
 
-    const ssize_t sent = sendto(udp_sock, temp, sizeof(struct sensor_value), 0,
-                               (struct sockaddr *)&server_addr, sizeof(server_addr));
+    const ssize_t sent = sendto(udp_sock,
+                                temp,
+                                sizeof(struct sensor_value),
+                                0,
+                                (struct sockaddr *)&server_addr,
+                                sizeof(server_addr));
     if (sent < 0) {
         LOG_WRN("Failed to send UDP packet: %s", strerror(errno));
     } else {
@@ -89,8 +92,7 @@ void on_temp_event(const struct zbus_channel *chan)
     }
 }
 
-void on_network_event(const struct zbus_channel *chan)
-{
+void on_network_event(const struct zbus_channel *chan) {
     if (chan != &network_chan) {
         return;
     }

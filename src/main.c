@@ -4,19 +4,18 @@
 #include "ds18b20.h"
 #include "led.h"
 
-int main(void)
-{
-	if (!wifi_init()) {
-		return -1;
-	}
+int main(void) {
+    if (!wifi_init()) {
+        return -1;
+    }
 
-	if (!ds18b20_init()) {
-		return -1;
-	}
+    if (!ds18b20_init()) {
+        return -1;
+    }
 
-	if (!led_init()){
-		return -1;
-	}
+    if (!led_init()) {
+        return -1;
+    }
 
-	return 0;
+    return 0;
 }
