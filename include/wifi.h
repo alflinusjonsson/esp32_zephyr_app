@@ -10,6 +10,12 @@
 bool wifi_init(void);
 
 /**
+ * @brief Connect to the configured Wi-Fi network
+ * @return true if the connection attempt was initiated successfully, false otherwise
+ */
+bool wifi_connect(void);
+
+/**
  * @brief Handle Wi-Fi management events
  *
  * @param cb Pointer to the net_mgmt_event_callback structure

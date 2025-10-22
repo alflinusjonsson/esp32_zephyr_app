@@ -16,20 +16,27 @@ LOG_MODULE_REGISTER(APP_WIFI, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define NET_EVENT_WIFI_MASK (NET_EVENT_WIFI_CONNECT_RESULT | NET_EVENT_WIFI_DISCONNECT_RESULT)
 #define NET_EVENT_IPV4_MASK (NET_EVENT_IPV4_ADDR_ADD | NET_EVENT_IPV4_ADDR_DEL)
+#define WIFI_RECONNECT_DELAY_MS 5000
 
 static struct net_if *sta_iface;
 static struct wifi_connect_req_params sta_config;
 static struct net_mgmt_event_callback wifi_cb;
 static struct net_mgmt_event_callback ipv4_callback;
+static struct k_work_delayable wifi_reconnect_work;
+static enum network_status network_status = NETWORK_DISCONNECTED;
+
+static void wifi_reconnect(struct k_work *work) {
+    wifi_connect();
+}
 
 bool wifi_init(void) {
     net_mgmt_init_event_callback(&wifi_cb, on_wifi_mgmt_event, NET_EVENT_WIFI_MASK);
     net_mgmt_add_event_callback(&wifi_cb);
+
     net_mgmt_init_event_callback(&ipv4_callback, on_ipv4_mgmt_event, NET_EVENT_IPV4_MASK);
     net_mgmt_add_event_callback(&ipv4_callback);
 
     sta_iface = net_if_get_wifi_sta();
-
     if (!sta_iface) {
         LOG_ERR("STA interface not initialized");
         return false;
@@ -43,7 +50,18 @@ bool wifi_init(void) {
     sta_config.channel = WIFI_CHANNEL_ANY;
     sta_config.band = WIFI_FREQ_BAND_2_4_GHZ;
 
-    LOG_INF("Connecting to SSID: %s\n", sta_config.ssid);
+    k_work_init_delayable(&wifi_reconnect_work, wifi_reconnect);
+
+    return wifi_connect();
+}
+
+bool wifi_connect(void) {
+    if (!sta_iface) {
+        LOG_ERR("STA interface not initialized, wifi_init() must be called first");
+        return false;
+    }
+
+    LOG_INF("Connecting to SSID: %s", CONFIG_WIFI_SAMPLE_SSID);
 
     const int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT,
                              sta_iface,
@@ -60,7 +78,7 @@ bool wifi_init(void) {
 void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb,
                         uint64_t mgmt_event,
                         struct net_if *iface) {
-    enum network_status status;
+    enum network_status new_network_status;
 
     switch (mgmt_event) {
     case NET_EVENT_WIFI_CONNECT_RESULT: {
@@ -69,7 +87,8 @@ void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb,
     }
     case NET_EVENT_WIFI_DISCONNECT_RESULT: {
         LOG_INF("Disconnected from %s", CONFIG_WIFI_SAMPLE_SSID);
-        status = NETWORK_DISCONNECTED;
+        new_network_status = NETWORK_DISCONNECTED;
+        k_work_schedule(&wifi_reconnect_work, K_MSEC(WIFI_RECONNECT_DELAY_MS));
         break;
     }
     default:
@@ -77,7 +96,12 @@ void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb,
         return;
     }
 
-    const int ret = zbus_chan_pub(&network_chan, &status, K_NO_WAIT);
+    if (new_network_status == network_status) {
+        return;
+    }
+
+    network_status = new_network_status;
+    const int ret = zbus_chan_pub(&network_chan, &network_status, K_NO_WAIT);
     if (ret < 0) {
         LOG_ERR("Failed to publish network status, error: %s", strerror(ret));
     }
@@ -86,17 +110,17 @@ void on_wifi_mgmt_event(struct net_mgmt_event_callback *cb,
 void on_ipv4_mgmt_event(struct net_mgmt_event_callback *cb,
                         uint64_t mgmt_event,
                         struct net_if *iface) {
-    enum network_status status;
+    enum network_status new_network_status;
 
     switch (mgmt_event) {
     case NET_EVENT_IPV4_ADDR_ADD: {
         LOG_INF("IPv4 address acquired");
-        status = NETWORK_CONNECTED;
+        new_network_status = NETWORK_CONNECTED;
         break;
     }
     case NET_EVENT_IPV4_ADDR_DEL: {
         LOG_INF("IPv4 address removed");
-        status = NETWORK_DISCONNECTED;
+        new_network_status = NETWORK_DISCONNECTED;
         break;
     }
     default:
@@ -104,7 +128,12 @@ void on_ipv4_mgmt_event(struct net_mgmt_event_callback *cb,
         return;
     }
 
-    const int ret = zbus_chan_pub(&network_chan, &status, K_NO_WAIT);
+    if (new_network_status == network_status) {
+        return;
+    }
+
+    network_status = new_network_status;
+    const int ret = zbus_chan_pub(&network_chan, &network_status, K_NO_WAIT);
     if (ret < 0) {
         LOG_ERR("Failed to publish network status, error: %s", strerror(ret));
     }
