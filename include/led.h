@@ -1,6 +1,8 @@
 #ifndef LED_H
 #define LED_H
 
+#include <stdbool.h>
+
 /**
  * @brief Initialize the LED.
  * @return true if initialization was successful, false otherwise.

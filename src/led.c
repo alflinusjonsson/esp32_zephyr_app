@@ -1,6 +1,6 @@
+#include "led.h"
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
-#include "led.h"
 
 #define STACKSIZE 1024
 #define THREAD0_PRIORITY 7

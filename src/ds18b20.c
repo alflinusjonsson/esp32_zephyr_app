@@ -1,10 +1,10 @@
-#include <zephyr/kernel.h>
-#include <zephyr/device.h>
-#include <zephyr/devicetree.h>
-#include <zephyr/logging/log.h>
-#include <zephyr/drivers/sensor.h>
 #include "ds18b20.h"
 #include "events.h"
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/sensor.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #define TEMP_READ_INTERVAL_MS 5000
 #define TEMP_STACK_SIZE 1024

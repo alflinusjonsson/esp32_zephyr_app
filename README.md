@@ -25,8 +25,8 @@ DS18B20 GND     -> GND
 ## Building
 ```bash
 west build -b esp32_devkitc/esp32/procpu -- \
-  -DCONFIG_WIFI_SAMPLE_SSID="Your_SSID" \
-  -DCONFIG_WIFI_SAMPLE_PSK="Your_Password" \
+  -DCONFIG_WIFI_SSID="Your_SSID" \
+  -DCONFIG_WIFI_PSK="Your_Password" \
   -DCONFIG_UDP_SERVER_ADDR="Your_Server_IP" \
   -DCONFIG_UDP_SERVER_PORT=Your_Server_Port
 ```

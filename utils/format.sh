@@ -12,7 +12,7 @@ set -euo pipefail
 CLANG_FORMAT=${CLANG_FORMAT:-clang-format}
 
 if ! command -v "$CLANG_FORMAT" &> /dev/null; then
-    echo "❌ Error: $CLANG_FORMAT not found in PATH."
+    echo "❌ Error: $CLANG_FORMAT not found in PATH.". Install with pip or your package manager.
     exit 1
 fi
 

@@ -1,6 +1,8 @@
 #ifndef DS18B20_H
 #define DS18B20_H
 
+#include <stdbool.h>
+
 /**
  * @brief Initialize the DS18B20 temperature sensor
  * @return true if initialization was successful, false otherwise

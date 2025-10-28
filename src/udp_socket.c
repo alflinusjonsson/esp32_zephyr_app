@@ -1,21 +1,61 @@
+#include "udp_socket.h"
+#include "events.h"
+#include "wifi_events.h"
+#include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/socket.h>
-#include <zephyr/drivers/sensor.h>
-#include "udp_socket.h"
-#include "events.h"
+#include <zephyr/zbus/zbus.h>
 
 BUILD_ASSERT(sizeof(CONFIG_UDP_SERVER_ADDR) > 0,
              "CONFIG_UDP_SERVER_ADDR is empty. Please provide it to west using "
              "-DCONFIG_UDP_SERVER_ADDR=<your-server-ip> or set it in prj.conf.");
 BUILD_ASSERT(sizeof(CONFIG_UDP_SERVER_PORT) > 0,
-             "CONFIG_UDP_SERVER_PORT is not set or invalid. Please provide it to west using "
+             "CONFIG_UDP_SERVER_PORT is not set or invalid. Please provide it to west "
+             "using "
              "-DCONFIG_UDP_SERVER_PORT=<your-server-port> or set it in prj.conf.");
 
 LOG_MODULE_REGISTER(APP_SOCKET, CONFIG_LOG_DEFAULT_LEVEL);
 
 static int udp_sock = -1;
 static struct sockaddr_in server_addr = {0};
+
+static void on_network_event(const struct zbus_channel *chan) {
+    if (chan != &network_chan) {
+        return;
+    }
+
+    const enum network_status *status = zbus_chan_const_msg(chan);
+    if (!status) {
+        LOG_WRN("network_chan returned NULL message pointer");
+        return;
+    }
+
+    switch (*status) {
+    case NETWORK_CONNECTED:
+        LOG_INF("Network connected");
+        udp_socket_open();
+        break;
+    case NETWORK_DISCONNECTED:
+        LOG_INF("Network disconnected");
+        udp_socket_close();
+        break;
+    default:
+        LOG_WRN("Unknown network status: %d", *status);
+        break;
+    }
+}
+
+ZBUS_LISTENER_DEFINE(network_listener, on_network_event);
+
+bool udp_socket_init(void) {
+    const int ret = zbus_chan_add_obs(&network_chan, &network_listener, K_NO_WAIT);
+    if (ret < 0) {
+        LOG_ERR("Failed to add network listener to network_chan: %s", strerror(ret));
+        return false;
+    }
+    return true;
+}
 
 void udp_socket_open(void) {
     if (udp_sock >= 0) {
@@ -63,7 +103,7 @@ void udp_socket_close(void) {
     }
 }
 
-void on_temp_event(const struct zbus_channel *chan) {
+static void on_temp_event(const struct zbus_channel *chan) {
     if (chan != &temp_chan) {
         return;
     }
@@ -92,31 +132,4 @@ void on_temp_event(const struct zbus_channel *chan) {
     }
 }
 
-void on_network_event(const struct zbus_channel *chan) {
-    if (chan != &network_chan) {
-        return;
-    }
-
-    const enum network_status *status = zbus_chan_const_msg(chan);
-    if (!status) {
-        LOG_WRN("network_chan returned NULL message pointer");
-        return;
-    }
-
-    switch (*status) {
-    case NETWORK_CONNECTED:
-        LOG_INF("Network connected");
-        udp_socket_open();
-        break;
-    case NETWORK_DISCONNECTED:
-        LOG_INF("Network disconnected");
-        udp_socket_close();
-        break;
-    default:
-        LOG_WRN("Unknown network status: %d", *status);
-        break;
-    }
-}
-
-ZBUS_LISTENER_DEFINE(network_listener, on_network_event);
 ZBUS_LISTENER_DEFINE(temp_listener, on_temp_event);
