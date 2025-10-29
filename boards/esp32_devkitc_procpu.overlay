@@ -4,7 +4,6 @@
  * Hardware Configuration:
  * - DS18B20 temperature sensor on GPIO 25 with
  * - 4.7kΩ pull-up resistor
- * - LED on GPIO 26 with 220Ω pull-down resistor
  */
 
 / {
@@ -16,13 +15,6 @@
         ds18b20: ds18b20 {
             compatible = "maxim,ds18b20";
             resolution = <12>;
-        };
-    };
-
-    leds {
-        compatible = "gpio-leds";
-        red_led: red_led {
-            gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
         };
     };
 };

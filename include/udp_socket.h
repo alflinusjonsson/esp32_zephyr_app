@@ -19,4 +19,10 @@ void udp_socket_open(void);
  */
 void udp_socket_close(void);
 
+/**
+ * @brief Send temperature data via UDP socket
+ * @param temp Pointer to sensor_value struct containing temperature data
+ */
+void udp_socket_send_data(const struct sensor_value *temp);
+
 #endif /* UDP_SOCKET_H */

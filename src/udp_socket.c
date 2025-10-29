@@ -103,12 +103,7 @@ void udp_socket_close(void) {
     }
 }
 
-static void on_temp_event(const struct zbus_channel *chan) {
-    if (chan != &temp_chan) {
-        return;
-    }
-
-    const struct sensor_value *temp = zbus_chan_const_msg(chan);
+void udp_socket_send_data(const struct sensor_value *temp) {
     if (!temp) {
         LOG_WRN("temp_chan returned NULL message pointer");
         return;
@@ -131,5 +126,3 @@ static void on_temp_event(const struct zbus_channel *chan) {
         LOG_DBG("Sent %d bytes: val1=%d, val2=%d", (int)sent, temp->val1, temp->val2);
     }
 }
-
-ZBUS_LISTENER_DEFINE(temp_listener, on_temp_event);
